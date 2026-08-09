@@ -97,7 +97,7 @@ async function generateItemOutcome(
   let imageMimeType: string | null = null;
 
   try {
-    const image = await generateConceptImage(prompt);
+    const image = await generateConceptImage(prompt, category);
     imageBuffer = image.buffer;
     imageMimeType = image.mimeType;
   } catch (err) {

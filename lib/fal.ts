@@ -22,10 +22,23 @@ interface FluxSchnellOutput {
   images?: { url: string; content_type?: string }[];
 }
 
-export async function generateConceptImage(prompt: string): Promise<GeneratedConceptImage> {
+export type ConceptImageSubject = 'structure' | 'weapon' | 'tool' | 'item';
+
+const SUBJECT_PROMPTS: Record<ConceptImageSubject, string> = {
+  structure: 'Minecraft tarzı, blok görünümlü, düz renkli, basit gölgelendirmeli bir yapının kavram sanatı',
+  weapon:
+    'A single Minecraft weapon item icon (like a sword, bow or axe), isolated on a plain neutral background, centered product icon render, blocky voxel style, no scenery, no landscape, no buildings, no castle',
+  tool: 'A single Minecraft tool item icon (like a pickaxe or shovel), isolated on a plain neutral background, centered product icon render, blocky voxel style, no scenery, no landscape, no buildings, no castle',
+  item: 'A single Minecraft item icon, isolated on a plain neutral background, centered product icon render, blocky voxel style, no scenery, no landscape, no buildings, no castle',
+};
+
+export async function generateConceptImage(
+  prompt: string,
+  subject: ConceptImageSubject = 'structure',
+): Promise<GeneratedConceptImage> {
   const result = await fal.subscribe('fal-ai/flux/schnell', {
     input: {
-      prompt: `Minecraft tarzı, blok görünümlü, düz renkli, basit gölgelendirmeli bir yapının kavram sanatı: ${prompt}`,
+      prompt: `${SUBJECT_PROMPTS[subject]}: ${prompt}`,
       image_size: 'square_hd',
       num_images: 1,
       output_format: 'png',
