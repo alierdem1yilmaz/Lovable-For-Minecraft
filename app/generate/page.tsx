@@ -23,10 +23,9 @@ export default async function GeneratePage() {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-[65%_35%] opacity-60"
+          className="object-cover object-[65%_30%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#050807]/70 via-[#050807]/80 to-[#050807]" />
-        <div className="absolute inset-0 bg-[#050807]/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#050807]/15 via-[#050807]/70 to-[#050807]" />
       </div>
 
       <main className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-6 px-6 py-16">
