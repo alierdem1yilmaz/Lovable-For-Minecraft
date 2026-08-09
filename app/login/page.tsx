@@ -1,7 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+
+function LoginError() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+  if (!error) return null;
+  return (
+    <p className="mb-4 rounded-md bg-red-950 p-3 text-sm text-red-300">
+      Giriş yapılamadı: {error}
+    </p>
+  );
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -24,6 +36,10 @@ export default function LoginPage() {
       <p className="mb-6 text-sm text-neutral-400">
         E-postana bir giriş linki gönderelim, şifre gerekmiyor.
       </p>
+
+      <Suspense fallback={null}>
+        <LoginError />
+      </Suspense>
 
       {status === 'sent' ? (
         <p className="rounded-md bg-emerald-950 p-4 text-sm text-emerald-300">

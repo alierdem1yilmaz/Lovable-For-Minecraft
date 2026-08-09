@@ -27,7 +27,7 @@ export default async function HistoryPage() {
       </div>
 
       {(!generations || generations.length === 0) && (
-        <p className="text-sm text-neutral-400">Henüz bir yapı üretmedin.</p>
+        <p className="text-sm text-neutral-400">Henüz bir icat üretmedin.</p>
       )}
 
       <ul className="flex flex-col gap-3">

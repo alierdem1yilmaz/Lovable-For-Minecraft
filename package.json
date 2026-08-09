@@ -9,9 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@fal-ai/client": "^1.10.1",
+    "@gltf-transform/core": "^4.4.2",
     "@google/genai": "^2.15.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
+    "jimp": "^1.6.1",
     "jszip": "^3.10.1",
     "next": "16.2.12",
     "react": "19.2.4",

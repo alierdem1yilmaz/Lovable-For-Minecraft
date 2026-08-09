@@ -16,10 +16,12 @@ create policy "Users can view their own generations"
 on public.generations for select
 using (auth.uid() = user_id);
 
-create policy "Users can insert their own generations"
-on public.generations for insert
-with check (auth.uid() = user_id);
 
 -- Mevcut tabloya sonradan eklenen migration (structure_name, function_id):
 -- alter table public.generations add column if not exists structure_name text not null default '';
 -- alter table public.generations add column if not exists function_id text not null default '';
+
+-- Image generation + Gaussian Splatting (image-to-asset) pipeline için additive migration:
+alter table public.generations add column if not exists glb_url text;
+alter table public.generations add column if not exists splat_url text;
+alter table public.generations add column if not exists pipeline text not null default 'text';

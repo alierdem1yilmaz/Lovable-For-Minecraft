@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export const STRUCTURE_MAX_SIZE = 10;
 export const STRUCTURE_MAX_BLOCKS = 400;
@@ -95,29 +95,4 @@ Kullanıcının tarifi: "${prompt}"`,
   }
 
   return parsed;
-}
-
-export interface GeneratedImage {
-  base64: string;
-  mimeType: string;
-}
-
-export async function generateConceptImage(prompt: string): Promise<GeneratedImage> {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3.1-flash-image',
-    contents: `Minecraft tarzı, blok görünümlü bir yapının kavram sanatı: ${prompt}`,
-    config: { responseModalities: ['IMAGE'] },
-  });
-
-  const parts = response.candidates?.[0]?.content?.parts ?? [];
-  const imagePart = parts.find((p) => p.inlineData?.data);
-
-  if (!imagePart?.inlineData?.data) {
-    throw new Error('Gemini görsel üretemedi');
-  }
-
-  return {
-    base64: imagePart.inlineData.data,
-    mimeType: imagePart.inlineData.mimeType ?? 'image/png',
-  };
 }
