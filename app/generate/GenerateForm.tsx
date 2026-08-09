@@ -163,7 +163,7 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
                 setContentType(c.type);
                 setStep('describe');
               }}
-              className={`group flex flex-col gap-4 rounded-lg border border-stone-800 bg-stone-950/40 p-5 text-left transition ${accent.hoverBorder} hover:bg-stone-900/60`}
+              className={`group flex flex-col gap-4 rounded-lg border border-stone-800 bg-stone-950/70 p-5 text-left backdrop-blur-sm transition ${accent.hoverBorder} hover:bg-stone-900/80`}
             >
               <span className={`flex size-11 items-center justify-center rounded-md border ${accent.badge}`}>
                 {c.icon}
