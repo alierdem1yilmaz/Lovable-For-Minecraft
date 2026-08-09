@@ -22,7 +22,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Silkscreen, Space_Grotesk } from 'next/font/google';
+import { Silkscreen, Press_Start_2P } from 'next/font/google';
 
 const pixelify = Silkscreen({
   subsets: ['latin', 'latin-ext'],
@@ -30,9 +30,9 @@ const pixelify = Silkscreen({
   variable: '--font-pixelify',
 });
 
-const display = Space_Grotesk({
+const display = Press_Start_2P({
   subsets: ['latin', 'latin-ext'],
-  weight: ['500', '700'],
+  weight: ['400'],
   variable: '--font-display',
 });
 
@@ -191,7 +191,7 @@ export default function Home() {
       <main className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col justify-end gap-10 px-6 pt-32 pb-20 sm:pb-24">
         <div className="max-w-2xl animate-rise-in [animation-delay:80ms] motion-reduce:animate-none">
           <h1
-            className={`text-[2.75rem] leading-[1.08] font-bold tracking-tight text-balance sm:text-6xl ${t.heading}`}
+            className={`text-xl leading-[1.7] text-balance sm:text-3xl sm:leading-[1.6] md:text-[2.1rem] ${t.heading}`}
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Fikrini yaz,{' '}
