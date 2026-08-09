@@ -22,12 +22,18 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Silkscreen } from 'next/font/google';
+import { Silkscreen, Space_Grotesk } from 'next/font/google';
 
 const pixelify = Silkscreen({
   subsets: ['latin', 'latin-ext'],
   weight: ['400', '700'],
   variable: '--font-pixelify',
+});
+
+const display = Space_Grotesk({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['500', '700'],
+  variable: '--font-display',
 });
 
 type TimeOfDay = 'night' | 'day';
@@ -55,20 +61,20 @@ const THEME = {
   day: {
     image: '/images/hero-day.jpg',
     imagePosition: 'object-[52%_38%]',
-    wrapperBg: 'bg-[#eef7f0]',
-    scrimB: 'bg-gradient-to-b from-[#eef7f0]/10 via-[#eef7f0]/40 to-[#eef7f0]/90',
-    scrimT: 'bg-gradient-to-t from-[#eef7f0]/60 via-transparent to-transparent',
-    glow: '[background:radial-gradient(120%_90%_at_20%_100%,rgba(241,107,70,0.12),transparent_60%)]',
+    wrapperBg: 'bg-[#f3f9f1]',
+    scrimB: 'bg-gradient-to-b from-[#f3f9f1]/15 via-[#f3f9f1]/65 to-[#f3f9f1]/97',
+    scrimT: 'bg-gradient-to-t from-[#f3f9f1]/75 via-transparent to-transparent',
+    glow: '[background:radial-gradient(120%_90%_at_20%_100%,rgba(241,107,70,0.10),transparent_60%)]',
     heading: 'text-stone-900',
-    accentSpan: 'text-[#c2410c]',
-    body: 'text-stone-700',
-    secondaryBtn: 'border-stone-900/20 bg-white/40 text-stone-900 hover:border-stone-900/35 hover:bg-white/60',
+    accentSpan: 'text-[#b8380a]',
+    body: 'text-stone-800',
+    secondaryBtn: 'border-stone-900/25 bg-white/80 text-stone-900 shadow-sm hover:border-stone-900/40 hover:bg-white',
     divider: 'from-stone-900/20',
-    stepNum: 'text-stone-600/80',
+    stepNum: 'text-stone-600/90',
     stepTitle: 'text-stone-900',
-    stepDesc: 'text-stone-600',
-    badge: { ember: 'border-[#f1653f]/45 bg-[#f1653f]/15 text-[#c2410c]', cyan: 'border-[#4cbacf]/45 bg-[#4cbacf]/15 text-[#0e7490]' },
-    toggleBg: 'border-stone-900/20 bg-white/50 text-stone-700',
+    stepDesc: 'text-stone-700',
+    badge: { ember: 'border-[#f1653f]/50 bg-[#f1653f]/15 text-[#b8380a]', cyan: 'border-[#4cbacf]/50 bg-[#4cbacf]/20 text-[#0b647a]' },
+    toggleBg: 'border-stone-900/25 bg-white/80 text-stone-700 shadow-sm',
     toggleActive: 'bg-stone-900/10 text-stone-900',
   },
 } as const;
@@ -137,7 +143,9 @@ export default function Home() {
   const t = THEME[timeOfDay];
 
   return (
-    <div className={`${pixelify.variable} relative flex flex-1 flex-col overflow-hidden transition-colors duration-500 ${t.wrapperBg}`}>
+    <div
+      className={`${pixelify.variable} ${display.variable} relative flex flex-1 flex-col overflow-hidden transition-colors duration-500 ${t.wrapperBg}`}
+    >
       <div className="absolute inset-0">
         <Image
           key={t.image}
@@ -183,8 +191,8 @@ export default function Home() {
       <main className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col justify-end gap-10 px-6 pt-32 pb-20 sm:pb-24">
         <div className="max-w-2xl animate-rise-in [animation-delay:80ms] motion-reduce:animate-none">
           <h1
-            className={`text-[2.75rem] leading-[1.05] font-bold tracking-wide text-balance sm:text-6xl ${t.heading}`}
-            style={{ fontFamily: 'var(--font-pixelify)' }}
+            className={`text-[2.75rem] leading-[1.08] font-bold tracking-tight text-balance sm:text-6xl ${t.heading}`}
+            style={{ fontFamily: 'var(--font-display)' }}
           >
             Fikrini yaz,{' '}
             <span className={t.accentSpan}>{timeOfDay === 'night' ? 'gecenin içinde' : 'gündüzün içinde'}</span>{' '}
