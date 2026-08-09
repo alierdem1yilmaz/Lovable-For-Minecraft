@@ -3,7 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Silkscreen } from 'next/font/google';
 import { createClient } from '@/lib/supabase/server';
-import { GenerateForm } from './GenerateForm';
+import { GenerateForm, type InitialDraft } from './GenerateForm';
 
 const pixelify = Silkscreen({
   subsets: ['latin', 'latin-ext'],
@@ -11,7 +11,12 @@ const pixelify = Silkscreen({
   variable: '--font-pixelify',
 });
 
-export default async function GeneratePage() {
+export default async function GeneratePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ draft?: string }>;
+}) {
+  const { draft: draftId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -19,6 +24,26 @@ export default async function GeneratePage() {
 
   if (!user) {
     redirect('/login');
+  }
+
+  let initialDraft: InitialDraft | undefined;
+  if (draftId) {
+    const { data: draft } = await supabase
+      .from('drafts')
+      .select('id, content_type, prompt, behavior, platform')
+      .eq('id', draftId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (draft) {
+      initialDraft = {
+        id: draft.id,
+        contentType: draft.content_type,
+        prompt: draft.prompt,
+        behavior: draft.behavior ?? '',
+        platform: draft.platform,
+      };
+    }
   }
 
   return (
@@ -48,10 +73,15 @@ export default async function GeneratePage() {
             sana kurulabilir bir Minecraft data pack&apos;i hazırlasın.
           </p>
         </div>
-        <GenerateForm />
-        <Link href="/history" className="text-sm text-stone-400 hover:text-stone-200">
-          Geçmiş üretimlerim →
-        </Link>
+        <GenerateForm initialDraft={initialDraft} />
+        <div className="flex gap-4">
+          <Link href="/history" className="text-sm text-stone-400 hover:text-stone-200">
+            Geçmiş üretimlerim →
+          </Link>
+          <Link href="/drafts" className="text-sm text-stone-400 hover:text-stone-200">
+            Taslaklarım →
+          </Link>
+        </div>
       </main>
     </div>
   );

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Silkscreen } from 'next/font/google';
 import { createClient } from '@/lib/supabase/server';
+import { DraftCard } from './DraftCard';
 
 const pixelify = Silkscreen({
   subsets: ['latin', 'latin-ext'],
@@ -10,7 +11,7 @@ const pixelify = Silkscreen({
   variable: '--font-pixelify',
 });
 
-export default async function HistoryPage() {
+export default async function DraftsPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -20,9 +21,9 @@ export default async function HistoryPage() {
     redirect('/login');
   }
 
-  const { data: generations } = await supabase
-    .from('generations')
-    .select('*')
+  const { data: drafts } = await supabase
+    .from('drafts')
+    .select('id, content_type, prompt, created_at')
     .order('created_at', { ascending: false });
 
   return (
@@ -42,36 +43,25 @@ export default async function HistoryPage() {
       <main className="relative mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 px-6 py-16">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-wide text-stone-50" style={{ fontFamily: 'var(--font-pixelify)' }}>
-            Geçmiş Üretimlerim
+            Taslaklarım
           </h1>
           <Link href="/generate" className="text-sm text-emerald-400 hover:text-emerald-300">
             + Yeni
           </Link>
         </div>
 
-        {(!generations || generations.length === 0) && (
-          <p className="text-sm text-stone-400">Henüz bir icat üretmedin.</p>
+        {(!drafts || drafts.length === 0) && (
+          <p className="text-sm text-stone-400">Henüz kaydedilmiş bir taslağın yok.</p>
         )}
 
         <ul className="flex flex-col gap-3">
-          {generations?.map((g) => (
-            <li key={g.id}>
-              <Link
-                href={`/result/${g.id}`}
-                className="block rounded-none border-2 border-stone-800 bg-stone-950/80 p-4 backdrop-blur-sm hover:border-stone-600"
-              >
-                <p className="font-medium text-stone-100">{g.prompt}</p>
-                <p className="mt-1 text-xs text-stone-500">
-                  {g.content_type === 'structure' ? `${g.block_count} blok · ` : ''}
-                  {new Date(g.created_at).toLocaleString('tr-TR')}
-                </p>
-              </Link>
-            </li>
+          {drafts?.map((d) => (
+            <DraftCard key={d.id} draft={d} />
           ))}
         </ul>
 
-        <Link href="/drafts" className="text-sm text-stone-500 hover:text-stone-300">
-          Taslaklarım →
+        <Link href="/history" className="text-sm text-stone-500 hover:text-stone-300">
+          Geçmiş üretimlerim →
         </Link>
       </main>
     </div>

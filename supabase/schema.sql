@@ -31,3 +31,20 @@ alter table public.generations add column if not exists content_type text not nu
 alter table public.generations add column if not exists payload jsonb not null default '{}'::jsonb;
 alter table public.generations add column if not exists platform text not null default 'java';
 alter table public.generations add column if not exists behavior text;
+
+-- Taslaklar: kullanıcı /generate akışından yarım bırakıp çıkarsa ilerlemesini saklamak için.
+create table if not exists public.drafts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  content_type text not null default 'structure',
+  prompt text not null default '',
+  behavior text,
+  platform text not null default 'java',
+  created_at timestamptz not null default now()
+);
+
+alter table public.drafts enable row level security;
+
+create policy "Users can view their own drafts"
+on public.drafts for select
+using (auth.uid() = user_id);

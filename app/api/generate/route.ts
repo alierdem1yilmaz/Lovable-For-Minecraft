@@ -224,5 +224,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Kayıt oluşturulamadı' }, { status: 500 });
   }
 
+  const draftId = typeof body?.draftId === 'string' ? body.draftId : null;
+  if (draftId) {
+    const { error: draftDeleteError } = await admin.from('drafts').delete().eq('id', draftId).eq('user_id', user.id);
+    if (draftDeleteError) {
+      console.error('draft cleanup error', draftDeleteError);
+    }
+  }
+
   return NextResponse.json({ id: generationId, name: outcome.structureName, blockCount: outcome.blockCount });
 }

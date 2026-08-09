@@ -142,20 +142,72 @@ const STEP_LABELS: Record<Exclude<WizardStep, 'pick'>, string> = {
   version: 'Versiyon seç',
 };
 
-export function GenerateForm({ initialType }: { initialType?: ContentType }) {
-  const [contentType, setContentType] = useState<ContentType>(initialType ?? 'structure');
+export interface InitialDraft {
+  id: string;
+  contentType: ContentType;
+  prompt: string;
+  behavior: string;
+  platform: Platform;
+}
+
+export function GenerateForm({ initialType, initialDraft }: { initialType?: ContentType; initialDraft?: InitialDraft }) {
+  const [contentType, setContentType] = useState<ContentType>(initialDraft?.contentType ?? initialType ?? 'structure');
   const category = CATEGORIES.find((c) => c.type === contentType) ?? CATEGORIES[0];
   const wizardSteps = stepsFor(category);
 
-  const [step, setStep] = useState<WizardStep>(initialType ? 'look' : 'pick');
-  const [prompt, setPrompt] = useState('');
-  const [behavior, setBehavior] = useState('');
-  const [platform, setPlatform] = useState<Platform>('java');
+  const [step, setStep] = useState<WizardStep>(initialDraft || initialType ? 'look' : 'pick');
+  const [prompt, setPrompt] = useState(initialDraft?.prompt ?? '');
+  const [behavior, setBehavior] = useState(initialDraft?.behavior ?? '');
+  const [platform, setPlatform] = useState<Platform>(initialDraft?.platform ?? 'java');
+  const [draftId, setDraftId] = useState<string | null>(initialDraft?.id ?? null);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const router = useRouter();
   const stepTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const hasUnsavedContent = step !== 'pick' && prompt.trim().length > 0;
+
+  function handleBackArrow() {
+    if (hasUnsavedContent) {
+      setShowLeaveConfirm(true);
+    } else {
+      router.back();
+    }
+  }
+
+  async function saveDraftAndLeave() {
+    setSavingDraft(true);
+    try {
+      const res = await fetch('/api/drafts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: draftId ?? undefined,
+          prompt,
+          contentType,
+          behavior: category.hasBehavior ? behavior : undefined,
+          platform,
+        }),
+      });
+      if (!res.ok) {
+        setSavingDraft(false);
+        return;
+      }
+      const data = await res.json();
+      setDraftId(data.id);
+    } catch {
+      setSavingDraft(false);
+      return;
+    }
+    router.back();
+  }
+
+  function discardAndLeave() {
+    router.back();
+  }
 
   useEffect(() => {
     if (!loading) return;
@@ -191,7 +243,13 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, contentType, behavior: category.hasBehavior ? behavior : undefined, platform }),
+        body: JSON.stringify({
+          prompt,
+          contentType,
+          behavior: category.hasBehavior ? behavior : undefined,
+          platform,
+          draftId: draftId ?? undefined,
+        }),
       });
       const data = await res.json();
 
@@ -208,39 +266,93 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
     }
   }
 
+  const backArrowButton = (
+    <button
+      type="button"
+      onClick={handleBackArrow}
+      aria-label="Geri dön"
+      className={`fixed top-6 left-6 z-20 flex size-10 items-center justify-center rounded-none border-2 border-stone-700 bg-stone-950/80 text-stone-300 backdrop-blur-sm transition hover:border-stone-500 hover:text-stone-100 ${SLOT_BEVEL_SM}`}
+    >
+      ←
+    </button>
+  );
+
+  const leaveConfirmModal = showLeaveConfirm && (
+    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/70 p-6">
+      <div className={`w-full max-w-sm rounded-none border-2 border-stone-700 bg-stone-950 p-5 ${SLOT_BEVEL}`}>
+        <h3 className="font-bold tracking-wide text-stone-100" style={PIXEL_FONT}>
+          Çıkmadan önce...
+        </h3>
+        <p className="mt-2 text-sm text-stone-400">
+          Girdiğin bilgiler henüz üretilmedi. Taslak olarak kaydetmek ister misin?
+        </p>
+        <div className="mt-4 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={saveDraftAndLeave}
+            disabled={savingDraft}
+            className={`rounded-none bg-[#f1653f] px-4 py-2.5 text-sm font-semibold text-white ${SLOT_BEVEL_SM} transition hover:bg-[#ff7a4d] disabled:opacity-50`}
+          >
+            {savingDraft ? 'Kaydediliyor...' : 'Taslak Olarak Kaydet'}
+          </button>
+          <button
+            type="button"
+            onClick={discardAndLeave}
+            disabled={savingDraft}
+            className="rounded-none border-2 border-stone-700 px-4 py-2.5 text-sm font-semibold text-stone-300 transition hover:border-stone-500 disabled:opacity-50"
+          >
+            Kaydetme, Çık
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowLeaveConfirm(false)}
+            disabled={savingDraft}
+            className="px-4 py-2 text-sm text-stone-500 transition hover:text-stone-300 disabled:opacity-50"
+          >
+            Vazgeç
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (step === 'pick') {
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {CATEGORIES.map((c) => {
-          const accent = ACCENT_CLASSES[c.accent];
-          return (
-            <button
-              key={c.type}
-              type="button"
-              onClick={() => {
-                setContentType(c.type);
-                setStep('look');
-              }}
-              className={`group flex flex-col gap-4 rounded-none border-2 border-stone-800 bg-stone-950/80 p-5 text-left backdrop-blur-sm transition ${accent.hoverBorder} hover:bg-stone-900/90`}
-            >
-              <span className={`flex size-11 items-center justify-center rounded-none border-2 ${SLOT_BEVEL} ${accent.badge}`}>
-                {c.icon}
-              </span>
-              <div>
-                <h3 className="font-bold tracking-wide text-stone-100" style={PIXEL_FONT}>
-                  {c.label}
-                </h3>
-                <p className="mt-1 text-sm text-stone-400">{c.cardDescription}</p>
-              </div>
-              <span
-                className={`ml-auto flex size-8 items-center justify-center rounded-none border-2 border-stone-700 text-stone-400 ${SLOT_BEVEL_SM} transition ${accent.arrow}`}
+      <>
+        {backArrowButton}
+        {leaveConfirmModal}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {CATEGORIES.map((c) => {
+            const accent = ACCENT_CLASSES[c.accent];
+            return (
+              <button
+                key={c.type}
+                type="button"
+                onClick={() => {
+                  setContentType(c.type);
+                  setStep('look');
+                }}
+                className={`group flex flex-col gap-4 rounded-none border-2 border-stone-800 bg-stone-950/80 p-5 text-left backdrop-blur-sm transition ${accent.hoverBorder} hover:bg-stone-900/90`}
               >
-                →
-              </span>
-            </button>
-          );
-        })}
-      </div>
+                <span className={`flex size-11 items-center justify-center rounded-none border-2 ${SLOT_BEVEL} ${accent.badge}`}>
+                  {c.icon}
+                </span>
+                <div>
+                  <h3 className="font-bold tracking-wide text-stone-100" style={PIXEL_FONT}>
+                    {c.label}
+                  </h3>
+                  <p className="mt-1 text-sm text-stone-400">{c.cardDescription}</p>
+                </div>
+                <span
+                  className={`ml-auto flex size-8 items-center justify-center rounded-none border-2 border-stone-700 text-stone-400 ${SLOT_BEVEL_SM} transition ${accent.arrow}`}
+                >
+                  →
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </>
     );
   }
 
@@ -248,14 +360,17 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
   const currentProgressIndex = progressSteps.indexOf(step as Exclude<WizardStep, 'pick'>);
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <button
-        type="button"
-        onClick={() => setStep('pick')}
-        className="self-start text-sm text-stone-500 transition hover:text-stone-300"
-      >
-        ← Kategori değiştir
-      </button>
+    <>
+      {backArrowButton}
+      {leaveConfirmModal}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <button
+          type="button"
+          onClick={() => setStep('pick')}
+          className="self-start text-sm text-stone-500 transition hover:text-stone-300"
+        >
+          ← Kategori değiştir
+        </button>
 
       <div className="flex items-center gap-2 text-stone-100">
         <span
@@ -390,7 +505,8 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
         </div>
       )}
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
-    </form>
+        {error && <p className="text-sm text-red-400">{error}</p>}
+      </form>
+    </>
   );
 }
