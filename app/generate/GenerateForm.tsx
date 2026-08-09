@@ -6,6 +6,27 @@ import { useRouter } from 'next/navigation';
 export type ContentType = 'structure' | 'weapon' | 'tool' | 'item';
 export type Platform = 'java' | 'bedrock';
 
+function PixelIcon({ pattern, colorA, colorB }: { pattern: string[]; colorA: string; colorB: string }) {
+  const size = pattern.length;
+  return (
+    <svg viewBox={`0 0 ${size} ${size}`} className="size-6" shapeRendering="crispEdges">
+      {pattern.flatMap((row, y) =>
+        [...row].map((ch, x) => {
+          if (ch === '.') return null;
+          return <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={ch === 'A' ? colorA : colorB} />;
+        }),
+      )}
+    </svg>
+  );
+}
+
+const PIXEL_PATTERNS = {
+  structure: ['..AAAA..', '.AAAAAA.', 'AAAAAAAA', '.BBBBBB.', '.BBBBBB.', '.BB..BB.', '.BB..BB.', '.BBBBBB.'],
+  weapon: ['.......A', '......AA', '.....AA.', '....AA..', '...AAB..', '..BB....', '.BB.....', 'B.......'],
+  tool: ['..AA.AA.', '.AAAAAA.', '..AAAA..', '...BB...', '...BB...', '..BB....', '.BB.....', 'B.......'],
+  item: ['...A....', '...A....', '..AAA...', '.AAAAA..', 'AAAAAAA.', '.AAAAA..', '..AAA...', '...A....'],
+};
+
 const CATEGORIES: {
   type: ContentType;
   label: string;
@@ -32,12 +53,7 @@ const CATEGORIES: {
     ],
     estimate: 'Bu işlem ~30-90 saniye sürebilir.',
     accent: 'ember',
-    icon: (
-      <svg viewBox="0 0 32 32" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-6">
-        <path d="M9 27V13l7-6 7 6v14" stroke="currentColor" />
-        <path d="M13 27v-7h6v7" stroke="currentColor" />
-      </svg>
-    ),
+    icon: <PixelIcon pattern={PIXEL_PATTERNS.structure} colorA="#ff8a63" colorB="#f1653f" />,
   },
   {
     type: 'weapon',
@@ -53,14 +69,7 @@ const CATEGORIES: {
     ],
     estimate: 'Bu işlem ~15-30 saniye sürebilir.',
     accent: 'cyan',
-    icon: (
-      <svg viewBox="0 0 32 32" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-6">
-        <path d="M23 5 12 16" stroke="currentColor" />
-        <path d="M20 2l6 6-3 3-6-6z" stroke="currentColor" />
-        <path d="M11 15l6 6-3 3-6-6z" stroke="currentColor" opacity="0.55" />
-        <path d="M8 22l-3.5 3.5M5.5 19.5 9 23" stroke="currentColor" />
-      </svg>
-    ),
+    icon: <PixelIcon pattern={PIXEL_PATTERNS.weapon} colorA="#7fd6e6" colorB="#4cbacf" />,
   },
   {
     type: 'tool',
@@ -76,14 +85,7 @@ const CATEGORIES: {
     ],
     estimate: 'Bu işlem ~15-30 saniye sürebilir.',
     accent: 'ember',
-    icon: (
-      <svg viewBox="0 0 32 32" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-6">
-        <path
-          d="M21.5 6a5 5 0 0 0-6.9 6.2L6 20.8 8.2 23l8.5-8.6A5 5 0 0 0 23 8.5l-3.4 3.5-2.1-2.1z"
-          stroke="currentColor"
-        />
-      </svg>
-    ),
+    icon: <PixelIcon pattern={PIXEL_PATTERNS.tool} colorA="#ff8a63" colorB="#f1653f" />,
   },
   {
     type: 'item',
@@ -99,11 +101,7 @@ const CATEGORIES: {
     ],
     estimate: 'Bu işlem ~15-30 saniye sürebilir.',
     accent: 'cyan',
-    icon: (
-      <svg viewBox="0 0 32 32" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-6">
-        <path d="M16 6l2.6 6.4L25 15l-6.4 2.6L16 24l-2.6-6.4L7 15l6.4-2.6z" stroke="currentColor" />
-      </svg>
-    ),
+    icon: <PixelIcon pattern={PIXEL_PATTERNS.item} colorA="#7fd6e6" colorB="#4cbacf" />,
   },
 ];
 
@@ -112,18 +110,23 @@ const PLATFORMS: { type: Platform; label: string; description: string }[] = [
   { type: 'bedrock', label: 'Bedrock Edition', description: 'Add-On (.mcaddon) — açınca otomatik kurulur, dünyada etkinleştir.' },
 ];
 
+const SLOT_BEVEL = 'shadow-[inset_2px_2px_0_rgba(255,255,255,0.15),inset_-2px_-2px_0_rgba(0,0,0,0.45)]';
+const SLOT_BEVEL_SM = 'shadow-[inset_1px_1px_0_rgba(255,255,255,0.12),inset_-1px_-1px_0_rgba(0,0,0,0.4)]';
+
 const ACCENT_CLASSES = {
   ember: {
-    badge: 'border-[#f1653f]/35 bg-[#f1653f]/10 text-[#ff8a63]',
-    hoverBorder: 'hover:border-[#f1653f]/50',
-    arrow: 'group-hover:border-[#f1653f]/60 group-hover:text-[#ff8a63]',
+    badge: 'border-[#f1653f]/45 bg-[#f1653f]/10 text-[#ff8a63]',
+    hoverBorder: 'hover:border-[#f1653f]/60',
+    arrow: 'group-hover:border-[#f1653f]/70 group-hover:text-[#ff8a63]',
   },
   cyan: {
-    badge: 'border-[#4cbacf]/35 bg-[#4cbacf]/10 text-[#7fd6e6]',
-    hoverBorder: 'hover:border-[#4cbacf]/50',
-    arrow: 'group-hover:border-[#4cbacf]/60 group-hover:text-[#7fd6e6]',
+    badge: 'border-[#4cbacf]/45 bg-[#4cbacf]/10 text-[#7fd6e6]',
+    hoverBorder: 'hover:border-[#4cbacf]/60',
+    arrow: 'group-hover:border-[#4cbacf]/70 group-hover:text-[#7fd6e6]',
   },
 };
+
+const PIXEL_FONT = { fontFamily: 'var(--font-pixelify)' };
 
 const LOADING_STEP_INTERVAL_MS = 9000;
 
@@ -218,17 +221,19 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
                 setContentType(c.type);
                 setStep('look');
               }}
-              className={`group flex flex-col gap-4 rounded-lg border border-stone-800 bg-stone-950/70 p-5 text-left backdrop-blur-sm transition ${accent.hoverBorder} hover:bg-stone-900/80`}
+              className={`group flex flex-col gap-4 rounded-none border-2 border-stone-800 bg-stone-950/80 p-5 text-left backdrop-blur-sm transition ${accent.hoverBorder} hover:bg-stone-900/90`}
             >
-              <span className={`flex size-11 items-center justify-center rounded-md border ${accent.badge}`}>
+              <span className={`flex size-11 items-center justify-center rounded-none border-2 ${SLOT_BEVEL} ${accent.badge}`}>
                 {c.icon}
               </span>
               <div>
-                <h3 className="font-semibold text-stone-100">{c.label}</h3>
+                <h3 className="font-bold tracking-wide text-stone-100" style={PIXEL_FONT}>
+                  {c.label}
+                </h3>
                 <p className="mt-1 text-sm text-stone-400">{c.cardDescription}</p>
               </div>
               <span
-                className={`ml-auto flex size-8 items-center justify-center rounded-md border border-stone-700 text-stone-400 transition ${accent.arrow}`}
+                className={`ml-auto flex size-8 items-center justify-center rounded-none border-2 border-stone-700 text-stone-400 ${SLOT_BEVEL_SM} transition ${accent.arrow}`}
               >
                 →
               </span>
@@ -253,10 +258,14 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
       </button>
 
       <div className="flex items-center gap-2 text-stone-100">
-        <span className={`flex size-8 items-center justify-center rounded-md border ${ACCENT_CLASSES[category.accent].badge}`}>
+        <span
+          className={`flex size-8 items-center justify-center rounded-none border-2 ${SLOT_BEVEL_SM} ${ACCENT_CLASSES[category.accent].badge}`}
+        >
           {category.icon}
         </span>
-        <h2 className="font-semibold">{category.label}</h2>
+        <h2 className="font-bold tracking-wide" style={PIXEL_FONT}>
+          {category.label}
+        </h2>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -293,13 +302,13 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
             placeholder={category.placeholder}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 text-sm text-stone-100 placeholder:text-stone-500"
+            className="rounded-none border-2 border-stone-700 bg-stone-900 px-4 py-3 text-sm text-stone-100 placeholder:text-stone-500"
           />
           <button
             type="button"
             disabled={prompt.trim().length < 3}
             onClick={goToNextStep}
-            className="rounded-md bg-[#f1653f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ff7a4d] disabled:opacity-50"
+            className={`rounded-none bg-[#f1653f] px-6 py-3 text-sm font-semibold text-white ${SLOT_BEVEL} transition hover:bg-[#ff7a4d] disabled:opacity-50`}
           >
             Devam et →
           </button>
@@ -317,20 +326,20 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
             placeholder={category.behaviorPlaceholder}
             value={behavior}
             onChange={(e) => setBehavior(e.target.value)}
-            className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 text-sm text-stone-100 placeholder:text-stone-500"
+            className="rounded-none border-2 border-stone-700 bg-stone-900 px-4 py-3 text-sm text-stone-100 placeholder:text-stone-500"
           />
           <div className="flex gap-3">
             <button
               type="button"
               onClick={goToPreviousStep}
-              className="rounded-md border border-stone-700 px-6 py-3 text-sm font-semibold text-stone-300 transition hover:border-stone-500"
+              className={`rounded-none border-2 border-stone-700 px-6 py-3 text-sm font-semibold text-stone-300 ${SLOT_BEVEL_SM} transition hover:border-stone-500`}
             >
               ← Geri
             </button>
             <button
               type="button"
               onClick={goToNextStep}
-              className="flex-1 rounded-md bg-[#f1653f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ff7a4d]"
+              className={`flex-1 rounded-none bg-[#f1653f] px-6 py-3 text-sm font-semibold text-white ${SLOT_BEVEL} transition hover:bg-[#ff7a4d]`}
             >
               Devam et →
             </button>
@@ -346,13 +355,15 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
                 key={p.type}
                 type="button"
                 onClick={() => setPlatform(p.type)}
-                className={`rounded-lg border p-4 text-left transition ${
+                className={`rounded-none border-2 p-4 text-left transition ${
                   platform === p.type
-                    ? 'border-[#f1653f]/60 bg-[#f1653f]/10'
+                    ? `border-[#f1653f]/70 bg-[#f1653f]/10 ${SLOT_BEVEL_SM}`
                     : 'border-stone-800 bg-stone-950/70 hover:border-stone-600'
                 }`}
               >
-                <h3 className="font-semibold text-stone-100">{p.label}</h3>
+                <h3 className="font-bold tracking-wide text-stone-100" style={PIXEL_FONT}>
+                  {p.label}
+                </h3>
                 <p className="mt-1 text-xs text-stone-400">{p.description}</p>
               </button>
             ))}
@@ -363,14 +374,14 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
               type="button"
               onClick={goToPreviousStep}
               disabled={loading}
-              className="rounded-md border border-stone-700 px-6 py-3 text-sm font-semibold text-stone-300 transition hover:border-stone-500 disabled:opacity-50"
+              className={`rounded-none border-2 border-stone-700 px-6 py-3 text-sm font-semibold text-stone-300 ${SLOT_BEVEL_SM} transition hover:border-stone-500 disabled:opacity-50`}
             >
               ← Geri
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 rounded-md bg-[#f1653f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ff7a4d] disabled:opacity-50"
+              className={`flex-1 rounded-none bg-[#f1653f] px-6 py-3 text-sm font-semibold text-white ${SLOT_BEVEL} transition hover:bg-[#ff7a4d] disabled:opacity-50`}
             >
               {loading ? category.loadingSteps[loadingStep] : `${category.label} Üret`}
             </button>

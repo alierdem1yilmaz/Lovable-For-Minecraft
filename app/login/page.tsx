@@ -31,42 +31,44 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
-      <h1 className="mb-2 text-2xl font-bold">Giriş Yap</h1>
-      <p className="mb-6 text-sm text-neutral-400">
-        E-postana bir giriş linki gönderelim, şifre gerekmiyor.
-      </p>
-
-      <Suspense fallback={null}>
-        <LoginError />
-      </Suspense>
-
-      {status === 'sent' ? (
-        <p className="rounded-md bg-emerald-950 p-4 text-sm text-emerald-300">
-          Giriş linkini <strong>{email}</strong> adresine gönderdik. Gelen kutunu kontrol et.
+    <div className="flex flex-1 flex-col bg-[#050807] text-stone-100">
+      <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-6">
+        <h1 className="mb-2 text-2xl font-bold text-stone-50">Giriş Yap</h1>
+        <p className="mb-6 text-sm text-stone-400">
+          E-postana bir giriş linki gönderelim, şifre gerekmiyor.
         </p>
-      ) : (
-        <form onSubmit={handleSignIn} className="flex flex-col gap-3">
-          <input
-            type="email"
-            required
-            placeholder="ornek@eposta.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-md border border-neutral-700 bg-neutral-900 px-4 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            disabled={status === 'loading'}
-            className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
-          >
-            {status === 'loading' ? 'Gönderiliyor...' : 'Giriş Linki Gönder'}
-          </button>
-          {status === 'error' && (
-            <p className="text-sm text-red-400">Bir şeyler ters gitti, tekrar dene.</p>
-          )}
-        </form>
-      )}
-    </main>
+
+        <Suspense fallback={null}>
+          <LoginError />
+        </Suspense>
+
+        {status === 'sent' ? (
+          <p className="rounded-md bg-emerald-950 p-4 text-sm text-emerald-300">
+            Giriş linkini <strong>{email}</strong> adresine gönderdik. Gelen kutunu kontrol et.
+          </p>
+        ) : (
+          <form onSubmit={handleSignIn} className="flex flex-col gap-3">
+            <input
+              type="email"
+              required
+              placeholder="ornek@eposta.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="rounded-md border border-stone-700 bg-stone-900 px-4 py-2 text-sm text-stone-100 placeholder:text-stone-500"
+            />
+            <button
+              type="submit"
+              disabled={status === 'loading'}
+              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            >
+              {status === 'loading' ? 'Gönderiliyor...' : 'Giriş Linki Gönder'}
+            </button>
+            {status === 'error' && (
+              <p className="text-sm text-red-400">Bir şeyler ters gitti, tekrar dene.</p>
+            )}
+          </form>
+        )}
+      </main>
+    </div>
   );
 }

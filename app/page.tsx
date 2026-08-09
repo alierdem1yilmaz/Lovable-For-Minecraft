@@ -18,11 +18,11 @@
 */
 import Link from 'next/link';
 import Image from 'next/image';
-import { Pixelify_Sans } from 'next/font/google';
+import { Silkscreen } from 'next/font/google';
 
-const pixelify = Pixelify_Sans({
+const pixelify = Silkscreen({
   subsets: ['latin', 'latin-ext'],
-  weight: ['500', '600', '700'],
+  weight: ['400', '700'],
   variable: '--font-pixelify',
 });
 
@@ -88,7 +88,7 @@ export default function Home() {
       <main className="relative mx-auto flex w-full max-w-5xl flex-1 flex-col justify-end gap-10 px-6 pt-32 pb-20 sm:pb-24">
         <div className="max-w-2xl animate-rise-in [animation-delay:80ms] motion-reduce:animate-none">
           <h1
-            className="text-[2.75rem] leading-[1.05] font-semibold tracking-wide text-balance text-stone-50 sm:text-6xl"
+            className="text-[2.75rem] leading-[1.05] font-bold tracking-wide text-balance text-stone-50 sm:text-6xl"
             style={{ fontFamily: 'var(--font-pixelify)' }}
           >
             Fikrini yaz,{' '}

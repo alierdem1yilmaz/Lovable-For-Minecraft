@@ -48,7 +48,7 @@ async function generateStructureOutcome(prompt: string, platform: Platform): Pro
     imageBuffer = image.buffer;
     imageMimeType = image.mimeType;
 
-    const reconstruction = await reconstruct3DFromImage(image.url, `Minecraft-style voxel build: ${prompt}`);
+    const reconstruction = await reconstruct3DFromImage(image.url);
     glbUrl = reconstruction.glbUrl;
     splatUrl = reconstruction.splatUrl;
 

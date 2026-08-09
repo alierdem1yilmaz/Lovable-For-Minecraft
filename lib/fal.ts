@@ -24,12 +24,15 @@ interface FluxSchnellOutput {
 
 export type ConceptImageSubject = 'structure' | 'weapon' | 'tool' | 'item';
 
+function productPhotoPrompt(noun: string): string {
+  return `Product photography of a single Minecraft ${noun} toy on a seamless white studio background, floating with a soft drop shadow only, nothing else in the frame, no props, no other objects, no ground surface visible, just white seamless backdrop`;
+}
+
 const SUBJECT_PROMPTS: Record<ConceptImageSubject, string> = {
   structure: 'Minecraft tarzı, blok görünümlü, düz renkli, basit gölgelendirmeli bir yapının kavram sanatı',
-  weapon:
-    'A single Minecraft weapon item icon (like a sword, bow or axe), isolated on a plain neutral background, centered product icon render, blocky voxel style, no scenery, no landscape, no buildings, no castle',
-  tool: 'A single Minecraft tool item icon (like a pickaxe or shovel), isolated on a plain neutral background, centered product icon render, blocky voxel style, no scenery, no landscape, no buildings, no castle',
-  item: 'A single Minecraft item icon, isolated on a plain neutral background, centered product icon render, blocky voxel style, no scenery, no landscape, no buildings, no castle',
+  weapon: productPhotoPrompt('sword weapon'),
+  tool: productPhotoPrompt('pickaxe tool'),
+  item: productPhotoPrompt('magical trinket item'),
 };
 
 export async function generateConceptImage(
@@ -64,11 +67,13 @@ export async function generateConceptImage(
   return { url: image.url, buffer, mimeType };
 }
 
-export async function reconstruct3DFromImage(imageUrl: string, promptHint: string): Promise<Reconstruction3D> {
+export async function reconstruct3DFromImage(imageUrl: string, segmentationLabel: string = 'building'): Promise<Reconstruction3D> {
   const result = await fal.subscribe('fal-ai/sam-3/3d-objects', {
     input: {
       image_url: imageUrl,
-      prompt: promptHint,
+      // sam-3'ün auto-segmentation adımı burada kısa bir nesne etiketi bekliyor
+      // (ör. "building"), tam cümle vermek "Auto-segmentation produced no masks" hatası veriyor.
+      prompt: segmentationLabel,
       export_textured_glb: true,
     },
     logs: false,
