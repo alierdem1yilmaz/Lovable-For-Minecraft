@@ -4,12 +4,15 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
 export type ContentType = 'structure' | 'weapon' | 'tool' | 'item';
+export type Platform = 'java' | 'bedrock';
 
 const CATEGORIES: {
   type: ContentType;
   label: string;
   cardDescription: string;
   placeholder: string;
+  behaviorPlaceholder: string;
+  hasBehavior: boolean;
   loadingSteps: string[];
   estimate: string;
   accent: 'ember' | 'cyan';
@@ -20,6 +23,8 @@ const CATEGORIES: {
     label: 'Yapı',
     cardDescription: 'Kuleler, evler, köprüler ve diğer bloklu yapılar.',
     placeholder: 'Örn: küçük taş bir gözetleme kulesi, üstünde ahşap çatı',
+    behaviorPlaceholder: '',
+    hasBehavior: false,
     loadingSteps: [
       'Kavramsal görsel oluşturuluyor...',
       '3D modele dönüştürülüyor (Gaussian Splatting)...',
@@ -39,7 +44,13 @@ const CATEGORIES: {
     label: 'Silah',
     cardDescription: 'Kılıçlar, yaylar, asalar ve diğer savaş odaklı eşyalar.',
     placeholder: 'Örn: ejderha ateşinde dövülmüş, alev efektli bir kılıç',
-    loadingSteps: ['Kavramsal görsel oluşturuluyor...', 'Özellikler ve tarif üretiliyor...'],
+    behaviorPlaceholder: 'Örn: vurduğu hedef birkaç saniye alevlensin ve geriye savrulsun',
+    hasBehavior: true,
+    loadingSteps: [
+      'Kavramsal görsel oluşturuluyor...',
+      'Özellikler ve davranış üretiliyor...',
+      'Data pack paketleniyor...',
+    ],
     estimate: 'Bu işlem ~15-30 saniye sürebilir.',
     accent: 'cyan',
     icon: (
@@ -56,7 +67,13 @@ const CATEGORIES: {
     label: 'Alet',
     cardDescription: 'Kazmalar, gadgetlar ve inşa ya da toplama için yardımcı eşyalar.',
     placeholder: 'Örn: madenlerde ışık saçan, hızlı kazan bir kazma',
-    loadingSteps: ['Kavramsal görsel oluşturuluyor...', 'Özellikler ve tarif üretiliyor...'],
+    behaviorPlaceholder: 'Örn: kullanınca normalden çok daha hızlı kazsın',
+    hasBehavior: true,
+    loadingSteps: [
+      'Kavramsal görsel oluşturuluyor...',
+      'Özellikler ve davranış üretiliyor...',
+      'Data pack paketleniyor...',
+    ],
     estimate: 'Bu işlem ~15-30 saniye sürebilir.',
     accent: 'ember',
     icon: (
@@ -73,7 +90,13 @@ const CATEGORIES: {
     label: 'Eşya',
     cardDescription: 'Olasılıklar sonsuz — aklına ne gelirse tarif et.',
     placeholder: 'Örn: dokunulunca şans getiren, parıldayan bir tılsım',
-    loadingSteps: ['Kavramsal görsel oluşturuluyor...', 'Özellikler ve tarif üretiliyor...'],
+    behaviorPlaceholder: 'Örn: elde tutulduğunda çevreye ışık saçsın',
+    hasBehavior: true,
+    loadingSteps: [
+      'Kavramsal görsel oluşturuluyor...',
+      'Özellikler ve davranış üretiliyor...',
+      'Data pack paketleniyor...',
+    ],
     estimate: 'Bu işlem ~15-30 saniye sürebilir.',
     accent: 'cyan',
     icon: (
@@ -82,6 +105,11 @@ const CATEGORIES: {
       </svg>
     ),
   },
+];
+
+const PLATFORMS: { type: Platform; label: string; description: string }[] = [
+  { type: 'java', label: 'Java Edition', description: 'Data pack (.zip) — datapacks klasörüne koy, /reload yap.' },
+  { type: 'bedrock', label: 'Bedrock Edition', description: 'Add-On (.mcaddon) — açınca otomatik kurulur, dünyada etkinleştir.' },
 ];
 
 const ACCENT_CLASSES = {
@@ -99,17 +127,32 @@ const ACCENT_CLASSES = {
 
 const LOADING_STEP_INTERVAL_MS = 9000;
 
+type WizardStep = 'pick' | 'look' | 'behavior' | 'version';
+
+function stepsFor(category: (typeof CATEGORIES)[number]): WizardStep[] {
+  return category.hasBehavior ? ['pick', 'look', 'behavior', 'version'] : ['pick', 'look', 'version'];
+}
+
+const STEP_LABELS: Record<Exclude<WizardStep, 'pick'>, string> = {
+  look: 'Görünüşü tarif et',
+  behavior: 'Davranışı tanımla',
+  version: 'Versiyon seç',
+};
+
 export function GenerateForm({ initialType }: { initialType?: ContentType }) {
-  const [step, setStep] = useState<'pick' | 'describe'>(initialType ? 'describe' : 'pick');
   const [contentType, setContentType] = useState<ContentType>(initialType ?? 'structure');
+  const category = CATEGORIES.find((c) => c.type === contentType) ?? CATEGORIES[0];
+  const wizardSteps = stepsFor(category);
+
+  const [step, setStep] = useState<WizardStep>(initialType ? 'look' : 'pick');
   const [prompt, setPrompt] = useState('');
+  const [behavior, setBehavior] = useState('');
+  const [platform, setPlatform] = useState<Platform>('java');
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const stepTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const category = CATEGORIES.find((c) => c.type === contentType) ?? CATEGORIES[0];
 
   useEffect(() => {
     if (!loading) return;
@@ -123,6 +166,18 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
     };
   }, [loading, category.loadingSteps.length]);
 
+  function goToNextStep() {
+    const currentIndex = wizardSteps.indexOf(step);
+    const next = wizardSteps[currentIndex + 1];
+    if (next) setStep(next);
+  }
+
+  function goToPreviousStep() {
+    const currentIndex = wizardSteps.indexOf(step);
+    const prev = wizardSteps[currentIndex - 1];
+    if (prev) setStep(prev);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoadingStep(0);
@@ -133,7 +188,7 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, contentType }),
+        body: JSON.stringify({ prompt, contentType, behavior: category.hasBehavior ? behavior : undefined, platform }),
       });
       const data = await res.json();
 
@@ -161,7 +216,7 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
               type="button"
               onClick={() => {
                 setContentType(c.type);
-                setStep('describe');
+                setStep('look');
               }}
               className={`group flex flex-col gap-4 rounded-lg border border-stone-800 bg-stone-950/70 p-5 text-left backdrop-blur-sm transition ${accent.hoverBorder} hover:bg-stone-900/80`}
             >
@@ -184,8 +239,11 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
     );
   }
 
+  const progressSteps = wizardSteps.filter((s): s is Exclude<WizardStep, 'pick'> => s !== 'pick');
+  const currentProgressIndex = progressSteps.indexOf(step as Exclude<WizardStep, 'pick'>);
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <button
         type="button"
         onClick={() => setStep('pick')}
@@ -201,23 +259,126 @@ export function GenerateForm({ initialType }: { initialType?: ContentType }) {
         <h2 className="font-semibold">{category.label}</h2>
       </div>
 
-      <textarea
-        required
-        minLength={3}
-        rows={4}
-        placeholder={category.placeholder}
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 text-sm text-stone-100 placeholder:text-stone-500"
-      />
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-md bg-[#f1653f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ff7a4d] disabled:opacity-50"
-      >
-        {loading ? category.loadingSteps[loadingStep] : `${category.label} Üret`}
-      </button>
-      {loading && <p className="text-center text-xs text-stone-500">{category.estimate}</p>}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex gap-1.5">
+          {progressSteps.map((s, i) => (
+            <div
+              key={s}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                i <= currentProgressIndex ? 'bg-[#4ade80]' : 'bg-stone-800'
+              }`}
+            />
+          ))}
+        </div>
+        <div className="flex text-xs text-stone-500">
+          {progressSteps.map((s, i) => (
+            <span
+              key={s}
+              style={{ flex: 1 }}
+              className={i === currentProgressIndex ? 'font-medium text-stone-300' : undefined}
+            >
+              {STEP_LABELS[s]}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {step === 'look' && (
+        <div className="flex flex-col gap-4">
+          <textarea
+            autoFocus
+            required
+            minLength={3}
+            rows={4}
+            placeholder={category.placeholder}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 text-sm text-stone-100 placeholder:text-stone-500"
+          />
+          <button
+            type="button"
+            disabled={prompt.trim().length < 3}
+            onClick={goToNextStep}
+            className="rounded-md bg-[#f1653f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ff7a4d] disabled:opacity-50"
+          >
+            Devam et →
+          </button>
+        </div>
+      )}
+
+      {step === 'behavior' && (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-stone-400">
+            {category.label} kullanıldığında ya da vurduğunda ne olsun? (opsiyonel)
+          </p>
+          <textarea
+            autoFocus
+            rows={4}
+            placeholder={category.behaviorPlaceholder}
+            value={behavior}
+            onChange={(e) => setBehavior(e.target.value)}
+            className="rounded-md border border-stone-700 bg-stone-900 px-4 py-3 text-sm text-stone-100 placeholder:text-stone-500"
+          />
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={goToPreviousStep}
+              className="rounded-md border border-stone-700 px-6 py-3 text-sm font-semibold text-stone-300 transition hover:border-stone-500"
+            >
+              ← Geri
+            </button>
+            <button
+              type="button"
+              onClick={goToNextStep}
+              className="flex-1 rounded-md bg-[#f1653f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ff7a4d]"
+            >
+              Devam et →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 'version' && (
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {PLATFORMS.map((p) => (
+              <button
+                key={p.type}
+                type="button"
+                onClick={() => setPlatform(p.type)}
+                className={`rounded-lg border p-4 text-left transition ${
+                  platform === p.type
+                    ? 'border-[#f1653f]/60 bg-[#f1653f]/10'
+                    : 'border-stone-800 bg-stone-950/70 hover:border-stone-600'
+                }`}
+              >
+                <h3 className="font-semibold text-stone-100">{p.label}</h3>
+                <p className="mt-1 text-xs text-stone-400">{p.description}</p>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={goToPreviousStep}
+              disabled={loading}
+              className="rounded-md border border-stone-700 px-6 py-3 text-sm font-semibold text-stone-300 transition hover:border-stone-500 disabled:opacity-50"
+            >
+              ← Geri
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 rounded-md bg-[#f1653f] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#ff7a4d] disabled:opacity-50"
+            >
+              {loading ? category.loadingSteps[loadingStep] : `${category.label} Üret`}
+            </button>
+          </div>
+          {loading && <p className="text-center text-xs text-stone-500">{category.estimate}</p>}
+        </div>
+      )}
+
       {error && <p className="text-sm text-red-400">{error}</p>}
     </form>
   );

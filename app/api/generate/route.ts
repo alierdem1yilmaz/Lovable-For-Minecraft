@@ -7,6 +7,8 @@ import { generateConceptImage, reconstruct3DFromImage } from '@/lib/fal';
 import { voxelizeGlb } from '@/lib/voxelize';
 import { generateItem, type ItemCategory } from '@/lib/item-generation';
 import { buildItemDataPack, itemFunctionId } from '@/lib/item-pack';
+import { buildBedrockStructurePack } from '@/lib/bedrock-structure-pack';
+import { buildBedrockItemPack } from '@/lib/bedrock-item-pack';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -14,10 +16,13 @@ export const maxDuration = 120;
 const DAILY_GENERATION_LIMIT = 20;
 
 type ContentType = 'structure' | ItemCategory;
+type Platform = 'java' | 'bedrock';
 const VALID_CONTENT_TYPES: ContentType[] = ['structure', 'weapon', 'tool', 'item'];
+const VALID_PLATFORMS: Platform[] = ['java', 'bedrock'];
 
 interface GenerationOutcome {
-  zipBuffer: Buffer;
+  packBuffer: Buffer;
+  packExtension: 'zip' | 'mcaddon';
   structureName: string;
   functionId: string;
   blockCount: number;
@@ -30,7 +35,7 @@ interface GenerationOutcome {
   splatUrl: string | null;
 }
 
-async function generateStructureOutcome(prompt: string): Promise<GenerationOutcome> {
+async function generateStructureOutcome(prompt: string, platform: Platform): Promise<GenerationOutcome> {
   let structure: GeneratedStructure;
   let pipeline: 'image3d' | 'text' = 'image3d';
   let imageBuffer: Buffer | null = null;
@@ -64,10 +69,11 @@ async function generateStructureOutcome(prompt: string): Promise<GenerationOutco
     structure = await generateStructure(prompt);
   }
 
-  const zipBuffer = await buildDataPack(structure);
+  const packBuffer = platform === 'bedrock' ? await buildBedrockStructurePack(structure) : await buildDataPack(structure);
 
   return {
-    zipBuffer,
+    packBuffer,
+    packExtension: platform === 'bedrock' ? 'mcaddon' : 'zip',
     structureName: structure.name,
     functionId: structureFunctionId(structure),
     blockCount: structure.blocks.length,
@@ -81,7 +87,12 @@ async function generateStructureOutcome(prompt: string): Promise<GenerationOutco
   };
 }
 
-async function generateItemOutcome(prompt: string, category: ItemCategory): Promise<GenerationOutcome> {
+async function generateItemOutcome(
+  prompt: string,
+  category: ItemCategory,
+  behavior: string,
+  platform: Platform,
+): Promise<GenerationOutcome> {
   let imageBuffer: Buffer | null = null;
   let imageMimeType: string | null = null;
 
@@ -93,11 +104,13 @@ async function generateItemOutcome(prompt: string, category: ItemCategory): Prom
     console.error('concept image üretilemedi (item için opsiyonel), atlanıyor', err);
   }
 
-  const item = await generateItem(prompt, category);
-  const zipBuffer = await buildItemDataPack(item, category);
+  const item = await generateItem(prompt, category, behavior);
+  const packBuffer =
+    platform === 'bedrock' ? await buildBedrockItemPack(item, category, imageBuffer) : await buildItemDataPack(item, category);
 
   return {
-    zipBuffer,
+    packBuffer,
+    packExtension: platform === 'bedrock' ? 'mcaddon' : 'zip',
     structureName: item.name,
     functionId: itemFunctionId(item),
     blockCount: 0,
@@ -127,8 +140,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Geçerli bir açıklama gir' }, { status: 400 });
   }
   const trimmedPrompt = prompt.trim();
+  const behavior = typeof body?.behavior === 'string' ? body.behavior.trim() : '';
 
   const contentType: ContentType = VALID_CONTENT_TYPES.includes(body?.contentType) ? body.contentType : 'structure';
+  const platform: Platform = VALID_PLATFORMS.includes(body?.platform) ? body.platform : 'java';
 
   const admin = createAdminClient();
 
@@ -151,18 +166,21 @@ export async function POST(request: NextRequest) {
 
   let outcome: GenerationOutcome;
   try {
-    outcome = contentType === 'structure' ? await generateStructureOutcome(trimmedPrompt) : await generateItemOutcome(trimmedPrompt, contentType);
+    outcome =
+      contentType === 'structure'
+        ? await generateStructureOutcome(trimmedPrompt, platform)
+        : await generateItemOutcome(trimmedPrompt, contentType, behavior, platform);
   } catch (err) {
     console.error('generation error', err);
     return NextResponse.json({ error: 'Üretilemedi, tekrar dener misin?' }, { status: 502 });
   }
 
   const generationId = crypto.randomUUID();
-  const packPath = `${user.id}/${generationId}.zip`;
+  const packPath = `${user.id}/${generationId}.${outcome.packExtension}`;
 
   const { error: uploadError } = await admin.storage
     .from('generations')
-    .upload(packPath, outcome.zipBuffer, { contentType: 'application/zip' });
+    .upload(packPath, outcome.packBuffer, { contentType: 'application/zip' });
 
   if (uploadError) {
     console.error('storage upload error', uploadError);
@@ -187,6 +205,7 @@ export async function POST(request: NextRequest) {
     id: generationId,
     user_id: user.id,
     prompt: trimmedPrompt,
+    behavior: behavior.length > 0 ? behavior : null,
     structure_name: outcome.structureName,
     function_id: outcome.functionId,
     block_count: outcome.blockCount,
@@ -196,6 +215,7 @@ export async function POST(request: NextRequest) {
     splat_url: outcome.splatUrl,
     pipeline: outcome.pipeline,
     content_type: outcome.contentType,
+    platform,
     payload: outcome.payload,
   });
 

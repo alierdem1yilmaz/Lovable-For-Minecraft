@@ -60,7 +60,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
           download
           className="rounded-md bg-emerald-600 px-6 py-3 text-center text-sm font-semibold text-white hover:bg-emerald-500"
         >
-          Data Pack İndir (.zip)
+          {generation.platform === 'bedrock' ? 'Add-On İndir (.mcaddon)' : 'Data Pack İndir (.zip)'}
         </a>
       )}
 
@@ -92,8 +92,20 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
       <div className="rounded-md border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-300">
         <h2 className="mb-2 font-semibold text-neutral-100">Nasıl kurulur?</h2>
         <ol className="list-decimal space-y-1 pl-5">
-          <li>İndirdiğin zip&apos;i dünyanın <code>datapacks</code> klasörüne koy (dünya kayıt klasörü içinde).</li>
-          <li>Oyunda <code>/reload</code> komutunu çalıştır.</li>
+          {generation.platform === 'bedrock' ? (
+            <>
+              <li>İndirdiğin <code>.mcaddon</code> dosyasının üzerine çift tıkla — Minecraft otomatik olarak içe aktarır.</li>
+              <li>
+                Dünyanı düzenle → <strong>Davranış Paketleri</strong> ve <strong>Kaynak Paketleri</strong> sekmelerinden bu paketi
+                etkinleştir.
+              </li>
+            </>
+          ) : (
+            <>
+              <li>İndirdiğin zip&apos;i dünyanın <code>datapacks</code> klasörüne koy (dünya kayıt klasörü içinde).</li>
+              <li>Oyunda <code>/reload</code> komutunu çalıştır.</li>
+            </>
+          )}
           <li>
             {generation.content_type === 'structure' ? (
               <>

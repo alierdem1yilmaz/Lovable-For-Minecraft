@@ -30,6 +30,11 @@ function buildComponentsSnbt(item: GeneratedItem): string {
     parts.push(`minecraft:attribute_modifiers=[${modifiers}]`);
   }
 
+  if (item.enchantments.length > 0) {
+    const levels = item.enchantments.map((e) => `"minecraft:${e.id}":${e.level}`).join(',');
+    parts.push(`minecraft:enchantments={levels:{${levels}}}`);
+  }
+
   if (item.unbreakable) {
     parts.push('minecraft:unbreakable={}');
   }
@@ -54,6 +59,12 @@ function buildComponentsJson(item: GeneratedItem): Record<string, unknown> {
       operation: m.operation,
       ...(m.slot ? { slot: m.slot } : {}),
     }));
+  }
+
+  if (item.enchantments.length > 0) {
+    components['minecraft:enchantments'] = {
+      levels: Object.fromEntries(item.enchantments.map((e) => [`minecraft:${e.id}`, e.level])),
+    };
   }
 
   if (item.unbreakable) {

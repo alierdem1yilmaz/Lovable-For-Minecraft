@@ -14,12 +14,18 @@ export interface ItemRecipe {
   key: Record<string, string>;
 }
 
+export interface GeneratedEnchantment {
+  id: string;
+  level: number;
+}
+
 export interface GeneratedItem {
   name: string;
   itemId: string;
   baseItem: string;
   lore: string[];
   attributeModifiers: AttributeModifier[];
+  enchantments: GeneratedEnchantment[];
   unbreakable: boolean;
   recipe: ItemRecipe | null;
 }
@@ -92,6 +98,43 @@ const ATTRIBUTE_ALLOWLIST = [
 
 const OPERATION_ALLOWLIST = ['add_value', 'add_multiplied_base', 'add_multiplied_total'];
 
+const MAX_ENCHANTMENTS = 3;
+
+const ENCHANTMENT_ALLOWLIST = [
+  'sharpness',
+  'smite',
+  'bane_of_arthropods',
+  'knockback',
+  'fire_aspect',
+  'looting',
+  'sweeping_edge',
+  'efficiency',
+  'silk_touch',
+  'fortune',
+  'unbreaking',
+  'mending',
+  'power',
+  'punch',
+  'flame',
+  'infinity',
+  'piercing',
+  'quick_charge',
+  'multishot',
+  'loyalty',
+  'riptide',
+  'channeling',
+  'impaling',
+  'luck_of_the_sea',
+  'lure',
+  'depth_strider',
+  'frost_walker',
+  'respiration',
+  'aqua_affinity',
+  'protection',
+  'feather_falling',
+  'thorns',
+];
+
 const itemSchema = {
   type: 'OBJECT',
   properties: {
@@ -113,6 +156,18 @@ const itemSchema = {
       },
       description: `En fazla ${MAX_ATTRIBUTES} özellik`,
     },
+    enchantments: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          id: { type: 'STRING' },
+          level: { type: 'NUMBER' },
+        },
+        required: ['id', 'level'],
+      },
+      description: `En fazla ${MAX_ENCHANTMENTS} vanilla enchantment`,
+    },
     unbreakable: { type: 'BOOLEAN' },
     recipe: {
       type: 'OBJECT',
@@ -123,11 +178,16 @@ const itemSchema = {
       },
     },
   },
-  required: ['name', 'itemId', 'baseItem', 'lore', 'attributeModifiers', 'unbreakable'],
+  required: ['name', 'itemId', 'baseItem', 'lore', 'attributeModifiers', 'enchantments', 'unbreakable'],
 };
 
-export async function generateItem(prompt: string, category: ItemCategory): Promise<GeneratedItem> {
+export async function generateItem(prompt: string, category: ItemCategory, behavior?: string): Promise<GeneratedItem> {
   const allowlist = BASE_ITEM_ALLOWLIST[category];
+
+  const behaviorInstruction =
+    behavior && behavior.trim().length > 0
+      ? `\nKullanıcının istediği davranış/etki: "${behavior.trim()}"\nBu davranışı en yakın gerçek Minecraft mekaniğiyle yansıt: örneğin "vurulunca yansın" isteniyorsa fire_aspect enchantment'i, "vurulunca uzağa savrulsun" isteniyorsa knockback enchantment'i veya bir movement_speed/attack_damage attributeModifier'ı, "daha hızlı kazsın" isteniyorsa efficiency enchantment'i kullan. Davranışı ayrıca lore satırlarına da kısaca yansıt.`
+      : '';
 
   const response = await ai.models.generateContent({
     model: 'gemini-flash-latest',
@@ -138,9 +198,10 @@ Kısıtlar:
 - baseItem sadece şu listeden biri olmalı (önek olmadan): ${allowlist.items.join(', ')}
 - En fazla ${MAX_LORE_LINES} lore satırı kullan, her biri kısa ve atmosferik olsun.
 - En fazla ${MAX_ATTRIBUTES} attributeModifier kullan. attribute sadece şu listeden olmalı: ${ATTRIBUTE_ALLOWLIST.join(', ')}. operation sadece şu listeden olmalı: ${OPERATION_ALLOWLIST.join(', ')}.
+- En fazla ${MAX_ENCHANTMENTS} enchantment kullan. id sadece şu listeden olmalı (önek olmadan): ${ENCHANTMENT_ALLOWLIST.join(', ')}. level 1 ile 5 arasında olmalı.
 - unbreakable, eşyanın fikrine uygunsa true yap.
 - Eğer mantıklı bir crafting tarifi üretebiliyorsan recipe alanını doldur (3x3 pattern, en fazla 3 satır/3 sütun, key harfleri vanilla item ID'lerine eşlenir), üretemiyorsan null bırak.
-
+${behaviorInstruction}
 Kullanıcının tarifi: "${prompt}"`,
     config: {
       responseMimeType: 'application/json',
@@ -180,6 +241,23 @@ Kullanıcının tarifi: "${prompt}"`,
         }))
     : [];
 
+  const enchantments = Array.isArray(parsed.enchantments)
+    ? parsed.enchantments
+        .filter(
+          (e) =>
+            e &&
+            typeof e.id === 'string' &&
+            ENCHANTMENT_ALLOWLIST.includes(e.id.replace(/^minecraft:/, '')) &&
+            typeof e.level === 'number' &&
+            Number.isFinite(e.level),
+        )
+        .slice(0, MAX_ENCHANTMENTS)
+        .map((e) => ({
+          id: e.id.replace(/^minecraft:/, ''),
+          level: Math.min(5, Math.max(1, Math.round(e.level))),
+        }))
+    : [];
+
   const namePart = typeof parsed.name === 'string' && parsed.name.trim().length > 0 ? parsed.name.trim() : 'Özel Eşya';
   const itemIdPart =
     typeof parsed.itemId === 'string' && parsed.itemId.trim().length > 0
@@ -213,6 +291,7 @@ Kullanıcının tarifi: "${prompt}"`,
     baseItem,
     lore,
     attributeModifiers,
+    enchantments,
     unbreakable: Boolean(parsed.unbreakable),
     recipe,
   };

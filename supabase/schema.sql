@@ -25,3 +25,9 @@ using (auth.uid() = user_id);
 alter table public.generations add column if not exists glb_url text;
 alter table public.generations add column if not exists splat_url text;
 alter table public.generations add column if not exists pipeline text not null default 'text';
+
+-- Eşya üretimi (silah/alet/eşya) ve Java/Bedrock versiyon seçimi için additive migration:
+alter table public.generations add column if not exists content_type text not null default 'structure';
+alter table public.generations add column if not exists payload jsonb not null default '{}'::jsonb;
+alter table public.generations add column if not exists platform text not null default 'java';
+alter table public.generations add column if not exists behavior text;
