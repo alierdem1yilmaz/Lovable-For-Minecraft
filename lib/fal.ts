@@ -24,24 +24,31 @@ interface FluxSchnellOutput {
 
 export type ConceptImageSubject = 'structure' | 'weapon' | 'tool' | 'item';
 
-function productPhotoPrompt(noun: string): string {
-  return `Product photography of a single Minecraft ${noun} toy on a seamless white studio background, floating with a soft drop shadow only, nothing else in the frame, no props, no other objects, no ground surface visible, just white seamless backdrop`;
-}
-
-const SUBJECT_PROMPTS: Record<ConceptImageSubject, string> = {
-  structure: 'Minecraft tarzı, blok görünümlü, düz renkli, basit gölgelendirmeli bir yapının kavram sanatı',
-  weapon: productPhotoPrompt('sword weapon'),
-  tool: productPhotoPrompt('pickaxe tool'),
-  item: productPhotoPrompt('magical trinket item'),
+const SUBJECT_NOUNS: Record<Exclude<ConceptImageSubject, 'structure'>, string> = {
+  weapon: 'sword weapon',
+  tool: 'pickaxe tool',
+  item: 'magical trinket item',
 };
+
+// Kullanıcının tarifi doğrudan nesne adının yanına, kısıtlardan ÖNCE yerleştiriliyor —
+// aksi halde (tarif prompt'un en sonuna eklenince) model "alev saçan" gibi tarif detaylarını
+// büyük ölçüde görmezden gelip düz bir obje üretiyordu.
+function productPhotoPrompt(noun: string, description: string): string {
+  return `Product photography of a single Minecraft ${noun} toy — ${description} — on a seamless white studio background, floating with a soft drop shadow only. Render any effect the description mentions (flames, glow, particles, magical aura, sparks, etc.) directly on the item itself, as part of its design. Nothing else in the frame besides the item, no extra props, no separate objects, no ground surface visible, just white seamless backdrop.`;
+}
 
 export async function generateConceptImage(
   prompt: string,
   subject: ConceptImageSubject = 'structure',
 ): Promise<GeneratedConceptImage> {
+  const finalPrompt =
+    subject === 'structure'
+      ? `Minecraft tarzı, blok görünümlü, düz renkli, basit gölgelendirmeli bir yapının kavram sanatı: ${prompt}`
+      : productPhotoPrompt(SUBJECT_NOUNS[subject], prompt);
+
   const result = await fal.subscribe('fal-ai/flux/schnell', {
     input: {
-      prompt: `${SUBJECT_PROMPTS[subject]}: ${prompt}`,
+      prompt: finalPrompt,
       image_size: 'square_hd',
       num_images: 1,
       output_format: 'png',
